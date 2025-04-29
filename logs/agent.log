@@ -1,0 +1,6 @@
+2025-04-21 15:58:04,313 - root - ERROR - Error initializing agent: AsyncOpenAI.__init__() got an unexpected keyword argument 'azure_endpoint'
+Traceback (most recent call last):
+  File "D:\Crawl_RAG\backend\agent\main.py", line 43, in main
+    openai_client = AsyncOpenAI(
+                    ^^^^^^^^^^^^
+TypeError: AsyncOpenAI.__init__() got an unexpected keyword argument 'azure_endpoint'
