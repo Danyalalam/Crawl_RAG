@@ -3,163 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pydantic AI Assistant</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <title>Pydantic AI Chat Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link rel="stylesheet" href="css/prism.css">
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <div class="app-container">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">
-                    <img src="assets/images/logo-white.svg" alt="Pydantic AI Logo">
-                    <h1>Pydantic AI</h1>
-                </div>
-                <button id="mobile-toggle" class="mobile-toggle">
-                    <i class="fas fa-bars"></i>
-                </button>
+    <!-- Floating Settings Button -->
+    <div class="floating-settings">
+        <button class="settings-toggle">
+            <i class="fas fa-cog"></i>
+        </button>
+        <div class="settings-panel">
+            <h3>Settings</h3>
+            <div class="setting-group">
+                <label for="api-url">API URL</label>
+                <input type="text" id="api-url" value="http://localhost:8000">
             </div>
-            
-            <nav class="sidebar-nav">
-                <button class="nav-button active" data-page="chat">
-                    <i class="fas fa-comment-dots"></i>
-                    <span>Chat</span>
-                </button>
-                <button class="nav-button" data-page="docs">
-                    <i class="fas fa-book"></i>
-                    <span>Documentation</span>
-                </button>
-                <button class="nav-button" data-page="about">
-                    <i class="fas fa-info-circle"></i>
-                    <span>About</span>
-                </button>
-            </nav>
-            
-            <div class="sidebar-section">
-                <h3>Settings</h3>
-                <div class="setting-group">
-                    <label for="api-url">API URL</label>
-                    <input type="text" id="api-url" value="http://localhost:8000">
-                </div>
-                <div class="setting-group">
-                    <label for="streaming-toggle">Streaming Mode</label>
-                    <div class="toggle-switch">
-                        <input type="checkbox" id="streaming-toggle" checked>
-                        <span class="toggle-slider"></span>
-                    </div>
-                </div>
-                <button id="test-connection" class="secondary-button">
-                    <i class="fas fa-network-wired"></i>
-                    Test Connection
-                </button>
-            </div>
-            
-            <div class="sidebar-section">
-                <h3>Chat Controls</h3>
-                <button id="clear-chat" class="primary-button">
-                    <i class="fas fa-trash-alt"></i>
-                    Clear Conversation
-                </button>
-            </div>
-            
-            <div class="sidebar-section">
-                <h3>Theme</h3>
+            <div class="toggle-group">
+                <label>Theme</label>
                 <div class="theme-switch">
                     <input type="checkbox" id="theme-toggle">
                     <label for="theme-toggle"></label>
-                    <span class="theme-label light">Light</span>
-                    <span class="theme-label dark">Dark</span>
                 </div>
             </div>
-            
-            <div class="sidebar-footer">
-                <p>© 2025 Pydantic AI Documentation Assistant</p>
+            <div class="toggle-group">
+                <label>Streaming Mode</label>
+                <div class="theme-switch">
+                    <input type="checkbox" id="streaming-toggle" checked>
+                    <label for="streaming-toggle"></label>
+                </div>
             </div>
-        </aside>
-        
-        <!-- Main content -->
+            <button id="clear-chat" class="primary-button">
+                <i class="fas fa-trash-alt"></i>
+                Clear Chat
+            </button>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- Main Content - Chat Only -->
         <main class="main-content">
             <div id="chat-page" class="page active">
                 <header class="page-header">
-                    <h2>Chat with Pydantic AI Assistant</h2>
+                    <div class="header-content">
+                        <h1><i class="fas fa-robot"></i> Pydantic AI Assistant</h1>
+                    </div>
                 </header>
                 
                 <div class="welcome-card">
                     <div class="welcome-icon">
-                        <i class="fas fa-robot"></i>
+                        <i class="fas fa-wand-magic-sparkles"></i>
                     </div>
-                    <h3>Welcome to Pydantic AI Assistant</h3>
-                    <p>Ask any question about Pydantic AI framework, and get instant, accurate answers powered by our AI assistant. Try questions about installation, usage examples, API references, and more!</p>
+                    <h2>Your Pydantic AI Expert</h2>
+                    <p>Ask anything about Pydantic AI framework - from basic concepts to advanced implementations. Get instant, accurate answers with code examples and documentation references.</p>
                 </div>
                 
                 <div id="chat-container" class="chat-container">
-                    <!-- Messages will be inserted here by JavaScript -->
+                    <!-- Messages will appear here -->
                 </div>
                 
                 <div class="chat-input-container">
                     <form id="chat-form">
-                        <input type="text" id="chat-input" placeholder="Ask about Pydantic AI..." autocomplete="off">
+                        <input type="text" id="chat-input" placeholder="Ask a question about Pydantic AI..." autocomplete="off">
                         <button type="submit" id="send-button">
                             <i class="fas fa-paper-plane"></i>
                         </button>
                     </form>
                 </div>
             </div>
-            
-            <div id="docs-page" class="page">
-                <header class="page-header">
-                    <h2>Pydantic AI Documentation</h2>
-                </header>
-                <div class="content-card">
-                    <p>This page allows you to browse through the Pydantic AI documentation directly.</p>
-                    <p>The documentation browser is currently under development. In the meantime, you can:</p>
-                    <ol>
-                        <li>Use the Chat feature to ask questions about Pydantic AI</li>
-                        <li>Visit the official documentation</li>
-                    </ol>
-                    <a href="https://ai.pydantic.dev/" target="_blank" class="primary-button">
-                        <i class="fas fa-external-link-alt"></i>
-                        Visit Pydantic AI Documentation
-                    </a>
-                    <div class="info-alert">
-                        <i class="fas fa-info-circle"></i>
-                        <p>The documentation browser functionality will be available soon.</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="about-page" class="page">
-                <header class="page-header">
-                    <h2>About Pydantic AI Documentation Assistant</h2>
-                </header>
-                <div class="content-card">
-                    <h3>What is Pydantic AI?</h3>
-                    <p>Pydantic AI is a powerful framework for building AI applications with type safety and validation. It extends the popular Pydantic library to provide tools for working with AI models, agents, and language processing capabilities.</p>
-                    
-                    <div class="features-grid">
-                        <div class="feature-column">
-                            <h4>Key Features</h4>
-                            <ul>
-                                <li><i class="fas fa-bolt"></i> Instant, accurate responses</li>
-                                <li><i class="fas fa-code"></i> Code examples</li>
-                                <li><i class="fas fa-book"></i> Complete documentation access</li>
-                            </ul>
-                        </div>
-                        <div class="feature-column">
-                            <h4>Technologies Used</h4>
-                            <ul>
-                                <li><i class="fas fa-globe"></i> HTML/CSS/JS (Frontend)</li>
-                                <li><i class="fas fa-server"></i> FastAPI (Backend)</li>
-                                <li><i class="fas fa-database"></i> RAG Architecture</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </main>
+    </div>
+
+    <div class="toast-container">
+        <!-- Toasts will appear here -->
     </div>
 
     <script src="js/prism.js"></script>

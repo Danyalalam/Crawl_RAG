@@ -9,7 +9,8 @@ from dotenv import load_dotenv
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(project_root)
 
-from backend.agent.agent import pydantic_ai_expert, PydanticAIDeps, init_global_supabase
+from backend.agent.agent import hbl_expert, PydanticAIDeps, init_global_supabase
+
 from backend.config.settings import SUPABASE_URL, SUPABASE_SERVICE_KEY
 
 # Load environment variables
@@ -48,11 +49,12 @@ async def main():
         deps = PydanticAIDeps(supabase=supabase)
         
         # Set dependencies on the agent directly
-        pydantic_ai_expert.deps = deps
+        hbl_expert.deps = deps
+
         
         # Print welcome message
-        print("\n===== Pydantic AI Documentation Assistant =====")
-        print("Ask questions about Pydantic AI framework.")
+        print("\n===== HBL Microfinance Bank Assistant =====")
+        print("Ask questions about HBL Microfinance Bank's products and services.")
         print("Type 'exit' to quit.")
         print("===============================================\n")
         
@@ -69,7 +71,7 @@ async def main():
                 print("Fetching answer...")
                 
                 # Run the agent with ONLY the query (no deps parameter)
-                result = await pydantic_ai_expert.run(user_query)
+                result = await hbl_expert.run(user_query)
                 
                 # Based on the debug output, we can see the response is in result.data
                 response_text = result.data if hasattr(result, 'data') else str(result)

@@ -15,20 +15,20 @@ EMBEDDING_MODEL = "text-embedding-3-small"
 EMBEDDING_DEPLOYMENT = "text-embedding-3-small"
 
 # Azure rate limit settings
-AZURE_TOKENS_PER_MIN_LIMIT = 120000
-AZURE_REQUESTS_PER_MIN_LIMIT = 720
+AZURE_TOKENS_PER_MIN_LIMIT = 60000
+AZURE_REQUESTS_PER_MIN_LIMIT = 360
 # Calculate safe limits (80% of max to provide buffer)
 AZURE_SAFE_TOKENS_PER_MIN = int(AZURE_TOKENS_PER_MIN_LIMIT * 0.8)
 AZURE_SAFE_REQUESTS_PER_MIN = int(AZURE_REQUESTS_PER_MIN_LIMIT * 0.8)
 
 # Gemini settings
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_MODEL = "gemini-2.0-flash"
+GEMINI_MODEL = "gemini-2.0-flash-lite"
 # Gemini has much stricter limits (15 RPM, 1M TPM, 1500 RPD)
-GEMINI_REQUESTS_PER_MIN_LIMIT = 15
-GEMINI_TOKENS_PER_MIN_LIMIT = 50000  # Conservative estimate
+GEMINI_REQUESTS_PER_MIN_LIMIT = 7
+GEMINI_TOKENS_PER_MIN_LIMIT = 25000  # Conservative estimate
 # Set safe limits at 70% of max to provide buffer
-GEMINI_SAFE_REQUESTS_PER_MIN = 10  # Very conservative
+GEMINI_SAFE_REQUESTS_PER_MIN = 5  # Very conservative
 GEMINI_SAFE_TOKENS_PER_MIN = int(GEMINI_TOKENS_PER_MIN_LIMIT * 0.7)
 
 # Supabase settings
@@ -47,4 +47,4 @@ genai_client = genai.Client(api_key=GEMINI_API_KEY)
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 # Crawler settings
-DEFAULT_MAX_CONCURRENT = 2  # Reduced to manage API rate limits better
+DEFAULT_MAX_CONCURRENT = 1  # Reduced to manage API rate limits better

@@ -1,10 +1,12 @@
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List, Optional
 import logging
 import asyncio
+import json
+import uuid
 import sys
 import os
 from pathlib import Path
@@ -14,7 +16,7 @@ from dotenv import load_dotenv
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(project_root)
 
-from backend.agent.agent import pydantic_ai_expert, PydanticAIDeps, init_global_supabase
+from backend.agent.agent import hbl_expert, PydanticAIDeps, init_global_supabase
 
 # Load environment variables
 load_dotenv()
@@ -33,10 +35,10 @@ logging.basicConfig(
     ]
 )
 
-# Initialize the app
+# Line 41-43: Update this to match HBL
 app = FastAPI(
-    title="Pydantic AI Documentation Assistant API",
-    description="API for answering questions about the Pydantic AI framework",
+    title="HBL MicroFinance Bank Assistant API",
+    description="API for answering questions about HBL MicroFinance Bank products and services",
     version="1.0.0"
 )
 
@@ -80,11 +82,10 @@ async def startup_db_client():
         deps = await get_dependencies()
         
         # Set dependencies on the agent directly
-        pydantic_ai_expert.deps = deps
+        hbl_expert.deps = deps
         logging.info("Agent dependencies initialized successfully")
     except Exception as e:
         logging.error(f"Failed to initialize agent dependencies: {e}")
-        # Let the app start anyway, we'll check dependencies for each request
 
 # Health check endpoint
 @app.get("/health", response_model=HealthResponse, tags=["System"])
@@ -103,13 +104,13 @@ async def ask_question(request: QueryRequest, background_tasks: BackgroundTasks)
             raise HTTPException(status_code=400, detail="Query cannot be empty")
         
         # Generate a conversation ID if none provided
-        conversation_id = request.conversation_id or f"conv_{os.urandom(4).hex()}"
+        conversation_id = request.conversation_id or str(uuid.uuid4())
         
         # Process the query with the agent
         logging.info(f"Processing query: {request.query} [conversation_id: {conversation_id}]")
         
         # Execute the agent
-        result = await pydantic_ai_expert.run(request.query)
+        result = await hbl_expert.run(request.query)
         
         # Extract the response
         response_text = result.data if hasattr(result, 'data') else str(result)
@@ -129,41 +130,68 @@ async def ask_question(request: QueryRequest, background_tasks: BackgroundTasks)
         logging.error(f"Error processing query: {e}")
         raise HTTPException(status_code=500, detail=f"Error processing query: {str(e)}")
 
-# Streaming version (optional)
-@app.post("/ask/stream", tags=["Agent"])
-async def ask_question_streaming(request: QueryRequest):
+# Single streaming endpoint that uses the simulated streaming approach
+@app.post("/stream", tags=["Agent"])
+async def stream_response(request: Request):
+    """
+    Stream responses from the AI agent with reliable chunking.
+    """
     try:
-        # Check if the query is empty
-        if not request.query.strip():
-            raise HTTPException(status_code=400, detail="Query cannot be empty")
-            
-        # Generate a conversation ID if none provided
-        conversation_id = request.conversation_id or f"conv_{os.urandom(4).hex()}"
+        # Parse the request body
+        data = await request.json()
+        query = data.get("query")
+        conversation_id = data.get("conversation_id")
         
+        # Validate the query
+        if not query or not query.strip():
+            raise HTTPException(status_code=400, detail="Query cannot be empty")
+        
+        # Generate a conversation ID if none provided
+        if not conversation_id:
+            conversation_id = str(uuid.uuid4())
+            
         # Log the incoming request
-        logging.info(f"Processing streaming query: {request.query} [conversation_id: {conversation_id}]")
+        logging.info(f"Processing streaming query: {query} [conversation_id: {conversation_id}]")
         
         async def generate():
             try:
-                # Process the query with the agent
-                result = await pydantic_ai_expert.run(request.query)
+                # Get the complete response first to avoid streaming issues
+                result = await hbl_expert.run(query)
                 
-                # Extract the response
+                # Extract the response text
                 response_text = result.data if hasattr(result, 'data') else str(result)
                 
-                # Send the JSON response
-                yield f"data: {response_text}\n\n"
+                # Break response into chunks (simulate streaming)
+                # Adjust the chunk size to control streaming speed
+                chunk_size = 10  # Characters per chunk
                 
-                # Send end of stream
-                yield "data: [DONE]\n\n"
+                for i in range(0, len(response_text), chunk_size):
+                    chunk = response_text[i:i+chunk_size]
+                    # Send chunk as SSE event
+                    yield f"data: {json.dumps({'text': chunk})}\n\n"
+                    # Small delay to make streaming feel natural
+                    await asyncio.sleep(0.01)
+                
+                # Send completion event
+                yield f"data: {json.dumps({'done': True})}\n\n"
+                
+                # Log completion
+                logging.info(f"Completed streaming query: {query} [conversation_id: {conversation_id}]")
                 
             except Exception as e:
-                logging.error(f"Error in stream generation: {e}")
-                yield f"data: Error: {str(e)}\n\n"
+                error_msg = f"Error in stream generation: {str(e)}"
+                logging.error(error_msg)
+                yield f"data: {json.dumps({'error': error_msg})}\n\n"
         
+        # Return a streaming response with the conversation ID in headers
         return StreamingResponse(
             generate(), 
-            media_type="text/event-stream"
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Conversation-ID": conversation_id
+            }
         )
             
     except Exception as e:

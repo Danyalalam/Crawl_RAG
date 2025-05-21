@@ -2,8 +2,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize theme
     initTheme();
     
-    // Initialize navigation
-    initNavigation();
+    // Initialize settings panel
+    initSettings();
     
     // Initialize API URL
     initApiUrl();
@@ -11,15 +11,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize clear conversation button
     initClearConversation();
     
-    // Initialize test connection button
-    initTestConnection();
+    // Initialize code blocks
+    initCodeBlocks();
     
-    // Initialize mobile menu toggle
-    initMobileMenu();
+    // Initialize streaming toggle
+    initStreamingToggle();
+    
+    // Initialize chat input handling
+    initChatInput();
 });
 
 function initTheme() {
     const themeToggle = document.getElementById('theme-toggle');
+    if (!themeToggle) return;
     
     // Check if user has a saved preference
     const savedTheme = localStorage.getItem('theme');
@@ -40,31 +44,22 @@ function initTheme() {
     });
 }
 
-function initNavigation() {
-    const navButtons = document.querySelectorAll('.nav-button');
-    const pages = document.querySelectorAll('.page');
+function initSettings() {
+    const settingsToggle = document.querySelector('.settings-toggle');
+    if (!settingsToggle) return;
     
-    navButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const pageName = button.dataset.page;
-            
-            // Deactivate all buttons and pages
-            navButtons.forEach(btn => btn.classList.remove('active'));
-            pages.forEach(page => page.classList.remove('active'));
-            
-            // Activate clicked button and corresponding page
-            button.classList.add('active');
-            document.getElementById(`${pageName}-page`).classList.add('active');
-        });
+    settingsToggle.addEventListener('click', () => {
+        document.querySelector('.floating-settings').classList.toggle('active');
     });
 }
 
 function initApiUrl() {
     const apiUrlInput = document.getElementById('api-url');
+    if (!apiUrlInput) return;
     
     // Check if user has a saved API URL
     const savedApiUrl = localStorage.getItem('apiUrl');
-    if (savedApiUrl) {
+    if (savedApiUrl && typeof api !== 'undefined') {
         apiUrlInput.value = savedApiUrl;
         api.setBaseUrl(savedApiUrl);
     }
@@ -73,56 +68,99 @@ function initApiUrl() {
     apiUrlInput.addEventListener('change', () => {
         const url = apiUrlInput.value.trim();
         localStorage.setItem('apiUrl', url);
-        api.setBaseUrl(url);
         
-        // Test connection automatically when URL changes
-        testConnection();
+        if (typeof api !== 'undefined') {
+            api.setBaseUrl(url);
+            showToast(`API URL updated to: ${url}`, 'info');
+        }
     });
 }
 
 function initClearConversation() {
     const clearButton = document.getElementById('clear-chat');
+    if (!clearButton || typeof chatManager === 'undefined') return;
+    
     clearButton.addEventListener('click', () => {
         chatManager.clear();
+        showToast('Chat cleared', 'info');
     });
 }
 
-async function testConnection() {
-    const testButton = document.getElementById('test-connection');
-    
-    testButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
-    testButton.disabled = true;
-    
-    try {
-        const response = await api.healthCheck();
-        if (response.status === 'ok') {
-            showToast('Connected to API successfully!', 'success');
-        } else {
-            showToast('API connection failed: ' + response.message, 'error');
-        }
-    } catch (error) {
-        showToast('API connection failed: ' + error.message, 'error');
-    } finally {
-        testButton.innerHTML = '<i class="fas fa-network-wired"></i> Test Connection';
-        testButton.disabled = false;
+function initCodeBlocks() {
+    // Handle code block language labels
+    function updateCodeBlockLanguages() {
+        document.querySelectorAll('pre code[class*="language-"]').forEach(block => {
+            const languageClass = Array.from(block.classList)
+                .find(cls => cls.startsWith('language-'));
+            
+            if (languageClass) {
+                const language = languageClass.replace('language-', '');
+                if (language) {
+                    const preBlock = block.parentElement;
+                    preBlock.setAttribute('data-language', language);
+                    preBlock.classList.add(`language-${language}`);
+                }
+            }
+        });
+    }
+
+    // Add observer to update code blocks when content changes
+    const chatContainer = document.getElementById('chat-container');
+    if (chatContainer) {
+        const observer = new MutationObserver(() => {
+            updateCodeBlockLanguages();
+        });
+        
+        observer.observe(chatContainer, { 
+            childList: true,
+            subtree: true
+        });
     }
 }
 
-function initTestConnection() {
-    const testButton = document.getElementById('test-connection');
-    testButton.addEventListener('click', testConnection);
+function initStreamingToggle() {
+    const streamingToggle = document.getElementById('streaming-toggle');
+    if (!streamingToggle || typeof chatManager === 'undefined') return;
+    
+    // Make sure toggle shows correct initial state
+    streamingToggle.checked = chatManager.streamingMode;
+    
+    streamingToggle.addEventListener('change', function() {
+        const isEnabled = chatManager.toggleStreamingMode();
+        this.checked = isEnabled;
+        
+        // Show toast to confirm mode change
+        showToast(`Streaming mode ${isEnabled ? 'enabled' : 'disabled'}`, 'info');
+    });
 }
 
-function initMobileMenu() {
-    const mobileToggle = document.getElementById('mobile-toggle');
-    const sidebar = document.querySelector('.sidebar');
+function initChatInput() {
+    const chatForm = document.getElementById('chat-form');
+    const chatInput = document.getElementById('chat-input');
     
-    mobileToggle.addEventListener('click', () => {
-        sidebar.classList.toggle('active');
-        mobileToggle.innerHTML = sidebar.classList.contains('active') 
-            ? '<i class="fas fa-times"></i>' 
-            : '<i class="fas fa-bars"></i>';
-    });
+    if (chatForm && typeof chatManager !== 'undefined') {
+        // Ensure form submission is handled correctly
+        chatForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            chatManager.sendMessage();
+        });
+    }
+    
+    if (chatInput) {
+        // Ensure the input is clickable and focusable
+        chatInput.addEventListener('click', function(e) {
+            e.stopPropagation();
+            this.focus();
+        });
+        
+        // Try to focus input after a short delay
+        setTimeout(() => {
+            chatInput.focus();
+        }, 500);
+    }
+    
+    // Show a toast message to confirm the chat is ready
+    showToast('Chat is ready! You can type your questions now.', 'info');
 }
 
 function showToast(message, type = 'info') {
@@ -137,7 +175,13 @@ function showToast(message, type = 'info') {
     // Create toast
     const toast = document.createElement('div');
     toast.classList.add('toast', `toast-${type}`);
-    toast.innerHTML = message;
+    
+    // Add icon to toast
+    let icon = 'info-circle';
+    if (type === 'success') icon = 'check-circle';
+    if (type === 'error') icon = 'exclamation-circle';
+    
+    toast.innerHTML = `<i class="fas fa-${icon}"></i> ${message}`;
     
     // Add toast to container
     toastContainer.appendChild(toast);
@@ -149,100 +193,4 @@ function showToast(message, type = 'info') {
             toast.remove();
         }, 300);
     }, 3000);
-}
-
-// Add CSS for toast
-const toastStyles = `
-.toast-container {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 1000;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.toast {
-    padding: 12px 16px;
-    border-radius: 4px;
-    color: white;
-    font-size: 14px;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
-    animation: toast-enter 0.3s ease;
-    min-width: 250px;
-}
-
-.toast-success {
-    background-color: var(--primary);
-}
-
-.toast-error {
-    background-color: #e74c3c;
-}
-
-.toast-info {
-    background-color: var(--secondary);
-}
-
-.toast-fade-out {
-    opacity: 0;
-    transform: translateX(100%);
-    transition: opacity 0.3s, transform 0.3s;
-}
-
-@keyframes toast-enter {
-    from {
-        opacity: 0;
-        transform: translateX(100%);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-`;
-
-// Add toast styles to document
-document.head.insertAdjacentHTML('beforeend', `<style>${toastStyles}</style>`);
-
-// Add to d:\Crawl_RAG\frontend\js\app.js after document ready
-
-// Handle code block language labels
-function updateCodeBlockLanguages() {
-    document.querySelectorAll('pre code[class*="language-"]').forEach(block => {
-        const languageClass = Array.from(block.classList)
-            .find(cls => cls.startsWith('language-'));
-        
-        if (languageClass) {
-            const language = languageClass.replace('language-', '');
-            if (language) {
-                const preBlock = block.parentElement;
-                preBlock.setAttribute('data-language', language);
-                preBlock.classList.add(`language-${language}`);
-            }
-        }
-    });
-}
-
-// Add observer to update code blocks when content changes
-const chatContainer = document.getElementById('chat-container');
-if (chatContainer) {
-    const observer = new MutationObserver(mutations => {
-        updateCodeBlockLanguages();
-    });
-    
-    observer.observe(chatContainer, { 
-        childList: true,
-        subtree: true
-    });
-}
-
-// Add toggle for streaming mode
-const streamingToggle = document.getElementById('streaming-toggle');
-if (streamingToggle) {
-    streamingToggle.addEventListener('change', function() {
-        const isEnabled = chatManager.toggleStreamingMode();
-        this.checked = isEnabled;
-    });
 }

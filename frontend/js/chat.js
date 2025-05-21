@@ -142,28 +142,42 @@ class ChatManager {
         this.chatContainer.scrollTop = this.chatContainer.scrollHeight;
     }
     
+    // Update this method in your ChatManager class to create better code blocks
+
     applyCodeFormatting(contentEl, role) {
         // Add specific styling for code blocks
         const codeBlocks = contentEl.querySelectorAll('pre code');
         codeBlocks.forEach(block => {
-            // Add a "copy" button
+            // Add a stylish "copy" button with text
             const copyBtn = document.createElement('button');
             copyBtn.className = 'copy-code-btn';
             copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
             copyBtn.title = 'Copy code';
             copyBtn.addEventListener('click', () => {
                 navigator.clipboard.writeText(block.textContent).then(() => {
+                    copyBtn.classList.add('copied');
                     copyBtn.innerHTML = '<i class="fas fa-check"></i>';
                     setTimeout(() => {
+                        copyBtn.classList.remove('copied');
                         copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
                     }, 2000);
                 });
             });
             
+            // Add line numbers for multiline code
+            const codeLines = block.textContent.split('\n');
+            if (codeLines.length > 1) {
+                block.innerHTML = codeLines.map(line => 
+                    `<span class="line">${line}</span>`
+                ).join('\n');
+            }
+            
             // Insert the copy button into the pre element
             const preEl = block.parentElement;
             preEl.style.position = 'relative';
-            preEl.insertBefore(copyBtn, preEl.firstChild);
+            if (!preEl.querySelector('.copy-code-btn')) {
+                preEl.insertBefore(copyBtn, preEl.firstChild);
+            }
         });
         
         // Apply syntax highlighting to code blocks
@@ -171,6 +185,11 @@ class ChatManager {
             setTimeout(() => {
                 Prism.highlightAllUnder(contentEl);
                 this.updateCodeBlockLanguages(contentEl);
+                
+                // Add animated entrance to code blocks
+                contentEl.querySelectorAll('pre').forEach((block, index) => {
+                    block.style.animationDelay = `${index * 0.1}s`;
+                });
             }, 0);
         }
     }

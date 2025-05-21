@@ -50,7 +50,7 @@ async def process_chunk(chunk: str, chunk_number: int, url: str) -> ProcessedChu
 
 # Modify process_and_store_document to process smaller batches
 
-async def process_and_store_document(url: str, markdown: str, batch_size: int = 2):  # Reduced from 5 to 2
+async def process_and_store_document(url: str, markdown: str, batch_size: int = 1):  # Reduced from 2 to 1
     """Process a document and store its chunks in batches."""
     if not markdown:
         logging.warning(f"Empty markdown content for URL: {url}")
@@ -73,7 +73,7 @@ async def process_and_store_document(url: str, markdown: str, batch_size: int = 
         
         # Add a longer delay between batches
         if i + batch_size < len(chunks):
-            await asyncio.sleep(15)  # Increased from 1 to 15 seconds
+            await asyncio.sleep(30)  # Increased from 15 to 30 seconds
     
     # Store all chunks in a single batch operation
     await insert_chunks_batch(processed_chunks)

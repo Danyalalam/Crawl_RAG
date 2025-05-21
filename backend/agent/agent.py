@@ -4,6 +4,7 @@ import os
 import logfire
 import logging
 from typing import List, Optional
+from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from pydantic_ai import Agent, RunContext
 from supabase import Client, create_client
@@ -12,6 +13,14 @@ from backend.config.settings import SUPABASE_URL, SUPABASE_SERVICE_KEY
 
 # Import your existing services
 from backend.services.ai_service import get_embedding
+
+class HBLResponse(BaseModel):
+    """Response structure for HBL expert agent."""
+    answer: str = Field(description="The response to the user's question about HBL")
+    sources: Optional[List[str]] = Field(
+        default=None, 
+        description="Sources used to generate the response, if applicable"
+    )
 
 load_dotenv()
 
@@ -41,10 +50,11 @@ def init_global_supabase():
 model_name = 'google-gla:gemini-2.0-flash'
 
 system_prompt = """
-You are an expert at Pydantic AI - a Python AI agent framework that you have access to all the documentation to,
-including examples, an API reference, and other resources to help you build Pydantic AI agents.
+You are an expert at HBL Microfinance Bank - a Pakistani microfinance institution that offers various financial 
+products and services. You have access to all the documentation, including information about their loans, deposit accounts, 
+digital channels, and other services.
 
-Your only job is to assist with this and you don't answer other questions besides describing what you are able to do.
+Your job is to assist with questions about HBL Microfinance Bank's products and services. You don't answer unrelated questions.
 
 Don't ask the user before taking an action, just do it. Always make sure you look at the documentation with the provided tools before answering the user's question unless you have already.
 
@@ -55,14 +65,16 @@ Always let the user know when you didn't find the answer in the documentation or
 """
 
 # Create the agent with built-in Gemini support
-pydantic_ai_expert = Agent(
+hbl_expert = Agent(
     model_name,
     system_prompt=system_prompt,
     deps_type=PydanticAIDeps,
-    retries=2
+    retries=2,
+    # Add output_type parameter (optional - remove if you prefer unstructured text)
+    # output_type=HBLResponse  
 )
 
-@pydantic_ai_expert.tool
+@hbl_expert.tool
 async def retrieve_relevant_documentation(ctx: RunContext[PydanticAIDeps], user_query: str) -> str:
     """
     Retrieve relevant documentation chunks based on the query with RAG.
@@ -109,7 +121,7 @@ Source: {doc['url']}
         logging.error(f"Error retrieving documentation: {e}")
         return f"Error retrieving documentation: {str(e)}"
 
-@pydantic_ai_expert.tool
+@hbl_expert.tool
 async def list_documentation_pages(ctx: RunContext[PydanticAIDeps]) -> List[str]:
     """
     Retrieve a list of all available documentation pages.
@@ -138,7 +150,7 @@ async def list_documentation_pages(ctx: RunContext[PydanticAIDeps]) -> List[str]
         logging.error(f"Error retrieving documentation pages: {e}")
         return []
 
-@pydantic_ai_expert.tool
+@hbl_expert.tool
 async def get_page_content(ctx: RunContext[PydanticAIDeps], url: str) -> str:
     """
     Retrieve the full content of a specific documentation page by combining all its chunks.
